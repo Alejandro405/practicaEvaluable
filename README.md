@@ -1,16 +1,15 @@
-# Practica Evaluable
+# practicaEvaluable
 
 
 
 
-### Puertos predef para los servidores:
+Puertos predef para los servidores:
 
     TTP -> 55600
 
     Bob -> 55700
 
     Alice -> 55800
-
 ### Fase inicial (comparticiond de recursos)
 Antes del intercambio de informacion entre Alice y Bob, las tres entidades del protocolo, han de compartir sus claves 
 publicas con el objetivo de usar criptograf'ia sim'etrica para el intercambio seguro de claves de sesi'on. Para ello 
