@@ -1,6 +1,8 @@
 import funciones_rsa
 import socket_class
 import funciones_aes
+import Tools
+
 from constans import *
 
 """
@@ -11,9 +13,12 @@ Paso 0 (Inicialización de recursos) :
     Diccionario con los nombres asociados al DNI
 """
 
-asimKey = funciones_rsa.crear_RSAKey()
-pubTTP = funciones_rsa.guardar_RSAKey_Publica("pub_TTP.pub", asimKey)
+asimKey = funciones_rsa.crear_RSAKey()# Pub key = asimKey.publickey()   Priv key = asimkey
+pubTTP = funciones_rsa.cargar_RSAKey_Publica("pub_TTP.pub")
+funciones_rsa.guardar_RSAKey_Publica("Bob" + ".pub", asimKey)
 socket = socket_class.SOCKET_SIMPLE_TCP("127.0.0.1", TTP_PORT)
+
+print("Recursos inicializados. Conectando con TTP....")
 socket.conectar()
 
 """ 
@@ -21,6 +26,22 @@ Paso 1 (2) :
     Generar clave des sesion (KBT) AES 
     Enviar clave a TTP con la clave p'ublica de TTP
 """
+KBT = funciones_aes.crear_AESKey()
+# JSON opera con listas de strings!!
+print("Clave KBT" + KBT.hex())
+
+msg = [
+    funciones_rsa.cifrarRSA_OAEP_BIN(
+        Tools.getJSONMessage([B, KBT.hex()]).encode("utf-8"), asimKey.public_key()
+        ).hex()
+    , funciones_rsa.firmarRSA_PSS(KBT, asimKey).hex()
+]
+
+msgJSON = Tools.getJSONMessage(msg)
+socket.enviar(msgJSON.encode("utf-8"))
+
+print("Mensaje enviado a TTP con la clave de sesion KBT")
+exit()
 
 # --------------  Conexiones con TTP finalizadas --> PERMANECER A LA ESCUCHA DEL MENSAJE INICIAL DE ALICE  -------------
 

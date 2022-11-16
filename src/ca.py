@@ -1,7 +1,6 @@
 import funciones_rsa
 
-password_alice = "alice"
-password_bob = "bob"
+
 fichero_alice = "rsa_alice"
 fichero_bob = "rsa_bob"
 
