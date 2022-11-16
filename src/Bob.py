@@ -17,6 +17,7 @@ asimKey = funciones_rsa.crear_RSAKey()# Pub key = asimKey.publickey()   Priv key
 pubTTP = funciones_rsa.cargar_RSAKey_Publica("pub_TTP.pub")
 funciones_rsa.guardar_RSAKey_Publica("Bob" + ".pub", asimKey)
 socket = socket_class.SOCKET_SIMPLE_TCP("127.0.0.1", TTP_PORT)
+datos = {"12345678x":"Cristina", "09876543Y":"MR.Roboot"}
 
 print("Recursos inicializados. Conectando con TTP....")
 socket.conectar()
