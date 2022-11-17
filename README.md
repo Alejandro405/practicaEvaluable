@@ -36,5 +36,18 @@ Alice actua como cliente en todo momento, TTP actuar'a como servidor en todo mom
 del estado de la comunicaci'on (cliente para la comuinicacion TTP, servidor para la comunicaci'on con Alice
 
 Para validar la integridad de los mensajes usando criptografía simétrica, haremos uso del modo de operación GCM. Esto
-implica que cada vez que se realize el enío de un mensaje cifrado usando dicho modo de operación, se han de llevar acabo
-tres envios secuenciales con: Criptograma, HMAC del mensaje, y el vector de inicialización usado durante el cifrado
+implica que cada vez que se realize el enío de un mensaje cifrado usando dicho modo de operación, se han de llevar a cabo
+tres envios secuenciales con: Criptograma, HMAC del mensaje, y el vector de inicialización usado durante el cifrado. 
+Además, se usará la mimsma clave para cifrar como para el cálculo de HMAC's
+
+En el enunciado de la práctica vemos como la generación de desafíos, para la generacion de frescura y validar la identidad
+del otro extremo, ha de ser llevada acabo mediante TimeStamps. Para esta taréa haremos uso de la librería "datetime", 
+siguiendo el esquema propuesto en https://www.programiz.com/python-programming/datetime/timestamp-datetime:
+    
+    from datetime import datetime
+
+    # current date and time
+    now = datetime.now()
+    
+    timestamp = datetime.timestamp(now)
+    print("timestamp =", timestamp)
