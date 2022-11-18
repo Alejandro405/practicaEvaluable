@@ -19,7 +19,7 @@ funciones_rsa.guardar_RSAKey_Publica("Bob.pub", asimKey)
 socket = socket_class.SOCKET_SIMPLE_TCP("127.0.0.1", TTP_PORT)
 datos = {"12345678x":"Cristina", "09876543Y":"MR.Roboot"}
 
-datos = {"12345678x":"Eliot", "09876543x":"MrRobot"}
+
 print("Recursos inicializados. Conectando con TTP....")
 socket.conectar()
 

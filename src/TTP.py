@@ -1,4 +1,4 @@
-import funciones_rsa
+
 import socket_class
 import funciones_aes
 import json
@@ -7,34 +7,44 @@ import Tools
 from Crypto.Util.Padding import pad, unpad
 from datetime import datetime
 from constans import *
-
+from funciones_rsa import *
 """
 Paso 0 (Inicializacion de recursos): 
     Generar claves públicas/privadas
     Guardar clave publica en el fichero <pub_TTP.pub>
     Inicializar socket de conexión, permeneciendo a la espera de peticiones iniciales
 """
-asimKey = funciones_rsa.crear_RSAKey()# Pub key = asimKey.publickey()   Priv key = asimkey
-funciones_rsa.guardar_RSAKey_Publica("pub_TTP.pub", asimKey.public_key())
+asimKey =  crear_RSAKey()# Pub key = asimKey.publickey()   Priv key = asimkey
+guardar_RSAKey_Publica("pub_TTP.pub", asimKey)
 socket = socket_class.SOCKET_SIMPLE_TCP("127.0.0.1", TTP_PORT)
 
-print("Recursos inicializados. Esperando clientes....")
+print("Recursos inicializados. Esperando cliente (Alice)....")
 socket.escuchar()
+
+pub_Alice =  cargar_RSAKey_Publica("Alice.pub")
 
 """ 
 Paso 1 : Recopilar claves de sesion KAT y KBT
     Recibir del socket -> [cifrado(Id, clave), firma(clave)]
     Identificar emisor del mensaje con el primer campo del JSON: "Alice" -> KAT; "Bob" -> KBT
 """
-aux = json.loads(socket.recibir().decode("utf-8"))  # Tupla de 2 componentes (Cifrado con datos, firma)
-cifradoSesion, firmaSesionA = aux[0], aux[1] # Dos string
+cifradoSesion = socket.recibir()
+firmaSesionA = socket.recibir()
+#aux = json.loads(response)   Tupla de 2 componentes (Cifrado con datos, firma)
+  # cifradoSesion, firmaSesionA = aux[0], aux[1] Dos string
 engineKAT = None
 
-print("\n-> "+ cifradoSesion +"\n-> "+firmaSesionA + "\n")
-id, claveSesion = funciones_rsa.descifrarRSA_OAEP(cifradoSesion.encode("utf-8"), asimKey)
+print("\n-> "+ cifradoSesion.hex() +"\n-> "+firmaSesionA.hex() + "\n")
 
+print("Clave pública -> " + str(asimKey.public_key().export_key()))
+print("Clave privada -> " + str(asimKey.export_key()))
+response = descifrarRSA_OAEP(cifradoSesion, asimKey)
+
+print("Response: " + response)
+
+"""
 if id == A:
-    if funciones_rsa.comprobarRSA_PSS(claveSesion.encode("utf-8"), firmaSesionA.encode("utf-8"), asimKey.public_key()):
+    if  comprobarRSA_PSS(claveSesion.encode("utf-8"), firmaSesionA.encode("utf-8"), asimKey.public_key()):
         KAT = claveSesion
         engineKAT = funciones_aes.iniciarAES_GCM(KAT)
     else:
@@ -43,14 +53,21 @@ if id == A:
 else:
     print("[ERROR]   Mensaje de orijen no válido")
     exit()
+"""
+
+
+print("[INFO] Petición resuelta con esxito. Esperando cliente (Bob)")
+
 socket.escuchar()
+print("[INFO] Atendiendo nuevo cliente (Bob)")
+pub_Bob =  cargar_RSAKey_Publica("Bob.pub")
 
 
 cifradoSesionB, firmaSesionB = json.loads(socket.recibir())  # Tupla de 2 componentes (Cifrado con datos, firma)
 engineKBT = None
-id, claveSesion = json.loads(funciones_rsa.descifrarRSA_OAEP(cifradoSesion, asimKey))
+id, claveSesion = json.loads( descifrarRSA_OAEP(cifradoSesion, asimKey))
 if id == B:
-    if funciones_rsa.comprobarRSA_PSS(claveSesion, firmaSesionB, asimKey):
+    if  comprobarRSA_PSS(claveSesion, firmaSesionB, asimKey):
         KBT = claveSesion
         engineKBT = funciones_aes.iniciarAES_GCM(KBT)
     else:

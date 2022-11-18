@@ -1,6 +1,6 @@
 import json
 
-import funciones_rsa
+from funciones_rsa import *
 import socket_class
 import funciones_aes
 from constans import *
@@ -13,9 +13,9 @@ Paso 0 (Inicialización de recursos) :
     Recuperar clave pública de TTP del fichero <pub_TTP.pub>
     Iniciar socket de conexión
 """
-asimKey = funciones_rsa.crear_RSAKey()  # Pub key = asimKey.publickey()   Priv key = asimkey
-pubTTP = funciones_rsa.cargar_RSAKey_Publica("pub_TTP.pub")
-funciones_rsa.guardar_RSAKey_Publica("Alice" + ".pub", asimKey)
+asimKey = crear_RSAKey()  # Pub key = asimKey.publickey()   Priv key = asimkey
+pubTTP = cargar_RSAKey_Publica("pub_TTP.pub")
+guardar_RSAKey_Publica("Alice.pub", asimKey)
 socket = socket_class.SOCKET_SIMPLE_TCP(LOCALHOST, TTP_PORT)
 
 print("Recursos inicializados. Conectando con TTP")
@@ -28,25 +28,35 @@ Paso 1 (1) :
 """
 KAT = funciones_aes.crear_AESKey()
 engineKAT = funciones_aes.iniciarAES_GCM(KAT)
-print("Clave KAT" + KAT.hex())
+print("Clave KAT generada : " + KAT.hex())
 
 # JSON opera con listas de strings!!
-msg = [
-    funciones_rsa.cifrarRSA_OAEP(json.dumps([A, KAT.hex()]), pubTTP).hex() # E(...)
-    , funciones_rsa.firmarRSA_PSS(KAT, asimKey).hex()                          # S(...)
-]
+aux = json.dumps([A, KAT.hex()])
 
-print("\n->" + msg[0] + "\n->" + msg[1] + "\n")
+socket.enviar(cifrarRSA_OAEP(aux, pubTTP.public_key()))
+socket.enviar(firmarRSA_PSS(KAT, asimKey))
+
+"""msg = [
+      .hex        # E(...)
+    , .hex()        # S(...)
+]
+print("\n-> Longitud = " + str(len(msg[0])) + "|" + msg[0] + "\n->" + msg[1] + "\n")
 
 msgJSON = Tools.getJSONMessage(msg)
-
+print("Pub TTP -> " + str(pubTTP.export_key()))
 socket.enviar(msgJSON.encode("utf-8"))
+"""
+
+
+
 
 print("Mensaje enviado a TTP con la clave de sesion KAT")
 
 socket.cerrar()
+exit()
 
-""" exit()
+
+""" 
 Paso 2 (3) :
     Lanzar petición de conexion con B a TTP
     Permanecer a la espera de la clave de sesi'on del TTP
@@ -86,8 +96,9 @@ Paso 3.1 (5) : Enviar X a Bob y mantenerse a la espera de la resoluci'on del des
 """
 socket = socket_class.SOCKET_SIMPLE_TCP(LOCALHOST, BOB_PORT)
 socket.conectar()
+cifrado, mac, iv = funciones_aes.cifrarAES_GCM(engineKAB, json.dumps([A, TS.hex()]))
 
-Tools.sendAESMessage(cifM, macM, ivM, socket)
+msg = json.dumps([cifM.hex(), macM.hex(), ivM.hex(), cifrado, mac, iv])
 
 cifrado, mac, iv = Tools.reciveAESMessage(socket)
 
