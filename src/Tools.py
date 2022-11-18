@@ -9,6 +9,9 @@ import json
 import constans
 from Crypto.Cipher import AES, PKCS1_OAEP
 
+from funciones_rsa import *
+from colorama import Fore, Style
+
 
 def getJSONMessage(contentList):
     """Dada una enera un JSON con el contenido de la lista pasada como par'ametro.
@@ -44,9 +47,9 @@ def checkHMAC_CTR(calcHMAC, recivHMAC):
         recivHMAC (bytes): HMAC recivido en el propio mensaje recivido
     """
     if calcHMAC == recivHMAC:
-        print("paquete correcto")
+        print(Fore.CYAN +"[INFO]     paquete correcto" + Style.RESET_ALL)
     else:
-        print("[Error] Inicion de conexión con B comprometido")
+        print(Fore.RED + "[ERROR]   Inicion de conexión con B comprometido" + Style.RESET_ALL)
         exit()
 
 def descifrarRSA(criptograma, claveDescifr):
@@ -101,7 +104,7 @@ def makeHMAC_SHA256(clave, datos):
     """
     return hmac.new(clave.encode('utf-8'), datos, hashlib.sha256).digest()
 
-def checkHMAC_GCM(key, iv, cif, mac):
+def checkMessage_GCM(key, iv, cif, mac):
     """Procedimiento de varificacion de MAC's. En caso de que las MAC's no concuerden el procedimieto aborta la ejecuci'on del programa que use la funci'on
 
     Args:
@@ -112,9 +115,22 @@ def checkHMAC_GCM(key, iv, cif, mac):
     """
     res = funciones_aes.descifrarAES_GCM(key, iv, cif, mac)
     if not res:
-        print("paquete correcto")
+        print(Fore.CYAN + "[INFO]     paquete correcto" + Style.RESET_ALL)
         return res
     else:
-        print("[Error] Inicion de conexión con B comprometido")
+        print(Fore.RED + "[ERROR]   Inici'On de conexión con B comprometido" + Style.RESET_ALL)
         exit()
 
+def checkSesionReq(expectedId, datos, firmaSesionA, publicKey):
+    if not comprobarRSA_PSS(datos, firmaSesionA, publicKey):
+        print(Fore.RED + "[ERROR]   Firmas alteradas durante el envío" + Style.RESET_ALL)
+        exit()
+
+    print(Fore.CYAN +"[INFO]     Firma válidada con éxito. Emisor autenticado" + Style.RESET_ALL)
+
+    id, KAT = json.load(datos)
+    if expectedId != expectedId:
+        print(Fore.RED + "[ERROR]   Mensaje con identificador no válido" + Style.RESET_ALL)
+        exit()
+
+    return KAT

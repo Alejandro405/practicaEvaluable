@@ -1,6 +1,8 @@
 import json
+import time
 
 from funciones_rsa import *
+from colorama import Fore, Style
 import socket_class
 import funciones_aes
 from constans import *
@@ -14,11 +16,11 @@ Paso 0 (Inicialización de recursos) :
     Iniciar socket de conexión
 """
 asimKey = crear_RSAKey()  # Pub key = asimKey.publickey()   Priv key = asimkey
-pubTTP = cargar_RSAKey_Publica("pub_TTP.pub")
 guardar_RSAKey_Publica("Alice.pub", asimKey)
 socket = socket_class.SOCKET_SIMPLE_TCP(LOCALHOST, TTP_PORT)
+pubTTP = cargar_RSAKey_Publica("pub_TTP.pub")
 
-print("Recursos inicializados. Conectando con TTP")
+print(Fore.LIGHTGREEN_EX + "[STATUS]   Recursos inicializados. Conectando con TTP" + Style.RESET_ALL)
 socket.conectar()
 
 """ 
@@ -33,29 +35,21 @@ print("Clave KAT generada : " + KAT.hex())
 # JSON opera con listas de strings!!
 aux = json.dumps([A, KAT.hex()])
 
-socket.enviar(cifrarRSA_OAEP(aux, pubTTP.public_key()))
-socket.enviar(firmarRSA_PSS(KAT, asimKey))
+cifrado = cifrarRSA_OAEP(aux, pubTTP.public_key())
+firma = firmarRSA_PSS(KAT.hex().encode("utf-8"), asimKey)
 
-"""msg = [
-      .hex        # E(...)
-    , .hex()        # S(...)
-]
-print("\n-> Longitud = " + str(len(msg[0])) + "|" + msg[0] + "\n->" + msg[1] + "\n")
+# print("firma -> " + firma.hex())
+# print("Cofrado -> " + cifrado.hex())
 
-msgJSON = Tools.getJSONMessage(msg)
-print("Pub TTP -> " + str(pubTTP.export_key()))
-socket.enviar(msgJSON.encode("utf-8"))
-"""
+socket.enviar(cifrado)
+socket.enviar(firma)
 
-
-
-
-print("Mensaje enviado a TTP con la clave de sesion KAT")
+print(Fore.CYAN + "[INFO]     Mensaje enviado a TTP con la clave de sesion KAT" + Style.RESET_ALL)
 
 socket.cerrar()
-exit()
 
 
+time.sleep(5)
 """ 
 Paso 2 (3) :
     Lanzar petición de conexion con B a TTP
@@ -63,11 +57,9 @@ Paso 2 (3) :
 """
 socket.conectar()
 peticionInicial = json.dumps([A, B])  # formato String
+socket.enviar(peticionInicial.encode("utf-8"))
 
-cifrado, mac, iv = funciones_aes.cifrarAES_GCM(engineKAT, peticionInicial.encode('utf-8'))
-
-Tools.sendAESMessage(cifrado, mac, iv, socket)
-
+print(Fore.LIGHTGREEN_EX + "[STATUS]   Peticion de sesión enviada, esperando clave de sesión KAB" + Style.RESET_ALL)
 """ 
 Paso 3 (4) : Desencriptar: 
     KAT->[Ts, KAB, E_KBT(Ts, K AB) = M].
@@ -76,38 +68,45 @@ Paso 3 (4) : Desencriptar:
 """
 # Pasamos a la espera de la respuesta de TTP con la clave KAB: E_KAT(Ts, KAB, E_KBT(TS, KAB) == X)
 
-cifrado, mac, iv = Tools.reciveAESMessage()
+cifrado = socket.recibir()
+mac = socket.recibir()
+iv = socket.recibir()
 
-textoClaro = funciones_aes.descifrarAES_GCM(KAT, iv, cifrado, mac)
+textoClaro = funciones_aes.descifrarAES_GCM(KAT.hex().encode("utf-8"), iv, cifrado, mac)
 if not textoClaro:
-    print("[ERROR]   Mensaje alterado durante el envío")
+    print(Fore.RED + "[ERROR]   Mensaje alterado durante el envío" + Style.RESET_ALL)
     exit()
 
 # Textoclaro es si o sí un array de bytes
 
-TS, KAB, cifM, macM, ivM = json.loads(textoClaro)
-engineKAB = funciones_aes.iniciarAES_GCM(KAB)
-
+TS_S, KAB_S, cifM_S, macM_S, ivM_S = json.loads(textoClaro)
+engineKAB = funciones_aes.iniciarAES_GCM(KAB_S.encode("utf-8"))
+print(Fore.CYAN + "[INFO]     Clave de sesión recibida. Estableciendo conexión con Bob" + Style.RESET_ALL)
 # ----------------------  Conexiones con TTP finalizadas   ----------------------
 socket.cerrar()
+
 """ 
-Paso 3.1 (5) : Enviar X a Bob y mantenerse a la espera de la resoluci'on del desaf'io
+Paso 3.1 (5) : 
+    Enviar X a Bob y mantenerse a la espera de la resoluci'on del desaf'io
     
 """
+exit()
 socket = socket_class.SOCKET_SIMPLE_TCP(LOCALHOST, BOB_PORT)
 socket.conectar()
-cifrado, mac, iv = funciones_aes.cifrarAES_GCM(engineKAB, json.dumps([A, TS.hex()]))
 
-msg = json.dumps([cifM.hex(), macM.hex(), ivM.hex(), cifrado, mac, iv])
+print(Fore.LIGHTGREEN_EX + "[STATUS]   Conexión con Bob establecida" + Style.RESET_ALL)
+
+cifrado, mac, iv = funciones_aes.cifrarAES_GCM(engineKAB, json.dumps([A, TS_S]))
+msg = json.dumps([cifM_S, macM_S, ivM_S, cifrado.hex(), mac(), iv.hex()])
+
+socket.enviar(msg.encode("utf-8"))
 
 cifrado, mac, iv = Tools.reciveAESMessage(socket)
+textoClaro = Tools.checkHMAC_GCM(KAB_S, iv, cifrado, mac)
+resol = json.loads(textoClaro)
 
-textoClaro = Tools.checkHMAC_GCM(KAB, iv, cifrado, mac)
-
-resol = json.load(textoClaro)
-
-if resol != TS + 1:
-    print("[ERROR] Desafío no superado")
+if resol != float(TS_S) + 1:
+    print(Fore.RED + "[ERROR]   Desafío no superado")
     exit()
 
 """ 
@@ -119,16 +118,16 @@ Paso  (7) :
 dni = "12345678x"
 
 Tools.sendAESMessage(
-    funciones_aes.cifrarAES_GCM(engineKAB, json.dumps(dni))
+    funciones_aes.cifrarAES_GCM(engineKAB, dni)
     , socket
 )
 
+print(Fore.LIGHTGREEN_EX + "[STATUS]   Petici'on enviada esperando respuesta" + Style.RESET_ALL)
+
 cifrado, mac, iv = Tools.reciveAESMessage()
 
-textoClaro = Tools.checkHMAC_GCM(KAB, iv, cifrado, mac)
+textoClaro = Tools.checkHMAC_GCM(KAB_S, iv, cifrado, mac)
 
 print("Nombre correspondiente al DNI(" + dni + "): " + textoClaro.decode())
-
-
 
 socket.cerrar()

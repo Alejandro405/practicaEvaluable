@@ -60,14 +60,14 @@ def descifrarRSA_OAEP_BIN(cifrado, key):
 
 def firmarRSA_PSS(datos, key_private):
     h = SHA256.new(datos)
-    # print(h.hexdigest())
+    # print("\n->" + h.hexdigest() + "\n")
     signature = pss.new(key_private).sign(h)
 
     return signature
 
 def comprobarRSA_PSS(datos, firma, key_public):
     h = SHA256.new(datos)
-    # print(h.hexdigest())
+    # print("\n" + h.hexdigest() + "\n")
     verifier = pss.new(key_public)
     try:
         verifier.verify(h, firma)

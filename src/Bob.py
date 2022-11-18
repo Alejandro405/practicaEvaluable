@@ -1,9 +1,12 @@
+import json
+
 import funciones_rsa
 import socket_class
 import funciones_aes
 import Tools
 
 from constans import *
+from colorama import Fore, Style
 
 """
 Paso 0 (Inicialización de recursos) : 
@@ -17,11 +20,11 @@ asimKey = funciones_rsa.crear_RSAKey() # Pub key = asimKey.publickey()   Priv ke
 pubTTP = funciones_rsa.cargar_RSAKey_Publica("pub_TTP.pub")
 funciones_rsa.guardar_RSAKey_Publica("Bob.pub", asimKey)
 socket = socket_class.SOCKET_SIMPLE_TCP("127.0.0.1", TTP_PORT)
-datos = {"12345678x":"Cristina", "09876543Y":"MR.Roboot"}
+datos = {"12345678x":"Eliot", "09876543Y":"MR.Roboot"}
 
 
-print("Recursos inicializados. Conectando con TTP....")
-socket.conectar()
+print(Fore.LIGHTGREEN_EX + "[STATUS]   Recursos inicializados. Conectando con TTP...." + Style.RESET_ALL)
+
 
 """ 
 Paso 1 (2) :
@@ -29,29 +32,34 @@ Paso 1 (2) :
     Enviar clave a TTP con la clave p'ublica de TTP
 """
 KBT = funciones_aes.crear_AESKey()
+engineKBT = funciones_aes.iniciarAES_GCM(KBT)
 # JSON opera con listas de strings!!
-print("Clave KBT" + KBT.hex())
+print("Clave KBT: " + KBT.hex())
 
-msg = [
-    funciones_rsa.cifrarRSA_OAEP_BIN(
-        Tools.getJSONMessage([B, KBT.hex()]).encode("utf-8"), asimKey.public_key()
-        ).hex()
-    , funciones_rsa.firmarRSA_PSS(KBT, asimKey).hex()
-]
+aux = json.dumps([B, KBT.hex()])
 
-msgJSON = Tools.getJSONMessage(msg)
-socket.enviar(msgJSON.encode("utf-8"))
+cifrado = funciones_rsa.cifrarRSA_OAEP(aux, pubTTP.public_key())
+firma = funciones_rsa.firmarRSA_PSS(KBT.hex().encode("utf-8"), asimKey)
 
-print("Mensaje enviado a TTP con la clave de sesion KBT")
+print("Firma a enviar: " + firma.hex())
+
+socket.conectar()
+socket.enviar(cifrado)
+socket.enviar(firma)
+
+print(Fore.CYAN + "[INFO]     Mensaje enviado a TTP con la clave de sesión KBT. Conexiones con TTP finalizadas" + Style.RESET_ALL)
 
 socket.cerrar()
-exit()
+
+print(Fore.LIGHTGREEN_EX + "[STATUS]   Esperando petici'on de servicio (Alice)" + Style.RESET_ALL)
 
 # --------------  Conexiones con TTP finalizadas --> PERMANECER A LA ESCUCHA DEL MENSAJE INICIAL DE ALICE  -------------
 
 
 socket = socket_class.SOCKET_SIMPLE_TCP(LOCALHOST, BOB_PORT)
 socket.escuchar()
+
+print(Fore.CYAN + "[INFO]     Conexion establecida. Atendiendo cliente (Alice)")
 
 """ 
 Paso  (6) : 
@@ -61,18 +69,59 @@ Paso  (6) :
     Enviar respuesta del desaf'io con KAB: KAB->[TS + 1]
     Importante revisar identiuficador del mensaje
 """
-ts = 0
-KAB = []
 
+response = socket.recibir()
+
+cifradoM, macM, ivM, cifrado, mac, iv = json.loads(response) # [cifradoM, macM, ivM] -> reenvio de A y [cifrado, mac, iv] para KAB
+
+# cifradoM -> TS, KAB
+# cifrado -> "Alice", TS
+
+textoClaro = Tools.checkMessage_GCM(KBT, ivM.encode("utf-8"), cifradoM.encode("utf-8"), macM.encode("utf-8"))
+
+TS_S, KAB_S = json.loads(textoClaro)
+engineKAB = funciones_aes.iniciarAES_GCM(KAB_S.encode("utf-8"))
+
+textoClaro = Tools.checkMessage_GCM(
+    KAB_S.encode("utf-8")
+    , iv.encode("utf-8")
+    , cifrado.encode("utf-8")
+    , mac.encode("utf-8")
+)
+
+idSesion, aux = json.loads(textoClaro)
+
+if idSesion == A and aux == TS_S:
+    print(Fore.CYAN + "[INFO]   Id de sesi'on verificado. Time stamps 'integros" + Style.RESET_ALL)
+else:
+    print(Fore.RED + "[ERROR]   Mensaje inicial mal formulado. Los Time-Stamps han de coincidir, y la identificaci'on ""'Alice'" + Style.RESET_ALL)
+
+print(Fore.CYAN + "[INFO]     Datos de sesi'on recogidos. Resolviendo desaf'io" + Style.RESET_ALL)
+
+resolucion = float(TS_S) + 1
 """ 
 Paso  (8) : 
     Descifrar el DNI para obtener la respuesta
     acceder al nombre almacenado en el diccionario
     IMPORTANTE: en caso de que el dni no est'e recogido en el diccionario se enviara la cadena vac'ia
 """
-dni = ""
-nombre = ""
 
-cifrado, mac, iv = funciones_aes.cifrarAES_GCM()
+cifrado, mac, iv = Tools.reciveAESMessage(socket)
 
-socket.enviar()
+textoClaro = Tools.checkMessage_GCM(KAB_S.encode("utf-8"), iv, cifrado, mac)
+
+dni = textoClaro.decode("utf-8")
+
+print("DNI ->" + dni)
+
+print(Fore.LIGHTGREEN_EX + "[STATUS]   Procesando respuesta. Cifrando mensaje")
+
+cifrado, mac, iv = funciones_aes.cifrarAES_GCM(datos[dni])
+
+Tools.sendAESMessage(cifrado, mac, iv)
+
+print(Fore.CYAN + "[INFO]     Respuesta a la peticion de DNI enviada" + Style.RESET_ALL)
+
+print(Fore.LIGHTGREEN_EX + "[STATUS]   Cerrando servicio")
+
+exit()
