@@ -1,3 +1,4 @@
+import binascii
 import json
 import time
 
@@ -49,7 +50,7 @@ print(Fore.CYAN + "[INFO]     Mensaje enviado a TTP con la clave de sesion KAT" 
 socket.cerrar()
 
 
-time.sleep(5)
+# time.sleep(10)
 """ 
 Paso 2 (3) :
     Lanzar petición de conexion con B a TTP
@@ -72,7 +73,9 @@ cifrado = socket.recibir()
 mac = socket.recibir()
 iv = socket.recibir()
 
-textoClaro = funciones_aes.descifrarAES_GCM(KAT.hex().encode("utf-8"), iv, cifrado, mac)
+
+# .hex().encode("utf-8")
+textoClaro = funciones_aes.descifrarAES_GCM(binascii.hexlify(KAT), iv, cifrado, mac)
 if not textoClaro:
     print(Fore.RED + "[ERROR]   Mensaje alterado durante el envío" + Style.RESET_ALL)
     exit()
@@ -80,7 +83,6 @@ if not textoClaro:
 # Textoclaro es si o sí un array de bytes
 
 TS_S, KAB_S, cifM_S, macM_S, ivM_S = json.loads(textoClaro)
-engineKAB = funciones_aes.iniciarAES_GCM(KAB_S.encode("utf-8"))
 print(Fore.CYAN + "[INFO]     Clave de sesión recibida. Estableciendo conexión con Bob" + Style.RESET_ALL)
 # ----------------------  Conexiones con TTP finalizadas   ----------------------
 socket.cerrar()
@@ -88,24 +90,24 @@ socket.cerrar()
 """ 
 Paso 3.1 (5) : 
     Enviar X a Bob y mantenerse a la espera de la resoluci'on del desaf'io
-    
+    exit()
 """
-exit()
+
 socket = socket_class.SOCKET_SIMPLE_TCP(LOCALHOST, BOB_PORT)
+engineKAB = funciones_aes.iniciarAES_GCM(bytes.fromhex(KAB_S))
 socket.conectar()
 
 print(Fore.LIGHTGREEN_EX + "[STATUS]   Conexión con Bob establecida" + Style.RESET_ALL)
 
-cifrado, mac, iv = funciones_aes.cifrarAES_GCM(engineKAB, json.dumps([A, TS_S]))
-msg = json.dumps([cifM_S, macM_S, ivM_S, cifrado.hex(), mac(), iv.hex()])
+cifrado, mac, iv = funciones_aes.cifrarAES_GCM(engineKAB, json.dumps([A, TS_S]).encode("utf-8"))
+msg = json.dumps([cifM_S, macM_S, ivM_S, cifrado.hex(), mac.hex(), iv.hex()])
 
 socket.enviar(msg.encode("utf-8"))
 
 cifrado, mac, iv = Tools.reciveAESMessage(socket)
-textoClaro = Tools.checkHMAC_GCM(KAB_S, iv, cifrado, mac)
-resol = json.loads(textoClaro)
+textoClaro = Tools.checkMessage_GCM(bytes.fromhex(KAB_S), iv, cifrado, mac)
 
-if resol != float(TS_S) + 1:
+if float(textoClaro) != float(TS_S) + 1:
     print(Fore.RED + "[ERROR]   Desafío no superado")
     exit()
 
@@ -116,17 +118,23 @@ Paso  (7) :
 """
 
 dni = "12345678x"
+engineKAB = funciones_aes.iniciarAES_GCM(bytes.fromhex(KAB_S))
+
+binascii.hexlify()
+cifrado, mac, iv = funciones_aes.cifrarAES_GCM(engineKAB, dni.encode("utf-8"))
 
 Tools.sendAESMessage(
-    funciones_aes.cifrarAES_GCM(engineKAB, dni)
+    cifrado
+    , mac
+    , iv
     , socket
 )
 
 print(Fore.LIGHTGREEN_EX + "[STATUS]   Petici'on enviada esperando respuesta" + Style.RESET_ALL)
 
-cifrado, mac, iv = Tools.reciveAESMessage()
+cifrado, mac, iv = Tools.reciveAESMessage(socket)
 
-textoClaro = Tools.checkHMAC_GCM(KAB_S, iv, cifrado, mac)
+textoClaro = Tools.checkMessage_GCM(bytes.fromhex(KAB_S), iv, cifrado, mac)
 
 print("Nombre correspondiente al DNI(" + dni + "): " + textoClaro.decode())
 

@@ -1,3 +1,4 @@
+import binascii
 import json
 
 import funciones_rsa
@@ -77,28 +78,32 @@ cifradoM, macM, ivM, cifrado, mac, iv = json.loads(response) # [cifradoM, macM, 
 # cifradoM -> TS, KAB
 # cifrado -> "Alice", TS
 
-textoClaro = Tools.checkMessage_GCM(KBT, ivM.encode("utf-8"), cifradoM.encode("utf-8"), macM.encode("utf-8"))
+textoClaro = Tools.checkMessage_GCM(binascii.hexlify(KBT), bytes.fromhex(ivM), bytes.fromhex(cifradoM), bytes.fromhex(macM))
 
 TS_S, KAB_S = json.loads(textoClaro)
-engineKAB = funciones_aes.iniciarAES_GCM(KAB_S.encode("utf-8"))
+engineKAB = funciones_aes.iniciarAES_GCM(bytes.fromhex(KAB_S))
 
 textoClaro = Tools.checkMessage_GCM(
-    KAB_S.encode("utf-8")
-    , iv.encode("utf-8")
-    , cifrado.encode("utf-8")
-    , mac.encode("utf-8")
+    bytes.fromhex(KAB_S)
+    , bytes.fromhex(iv)
+    , bytes.fromhex(cifrado)
+    , bytes.fromhex(mac)
 )
 
 idSesion, aux = json.loads(textoClaro)
 
 if idSesion == A and aux == TS_S:
-    print(Fore.CYAN + "[INFO]   Id de sesi'on verificado. Time stamps 'integros" + Style.RESET_ALL)
+    print(Fore.CYAN + "[INFO]     Id de sesi'on verificado. Time stamps 'integros" + Style.RESET_ALL)
 else:
-    print(Fore.RED + "[ERROR]   Mensaje inicial mal formulado. Los Time-Stamps han de coincidir, y la identificaci'on ""'Alice'" + Style.RESET_ALL)
+    print(Fore.RED + "[ERROR]    Mensaje inicial mal formulado. Los Time-Stamps han de coincidir, y la identificaci'on ""'Alice'" + Style.RESET_ALL)
 
 print(Fore.CYAN + "[INFO]     Datos de sesi'on recogidos. Resolviendo desaf'io" + Style.RESET_ALL)
 
 resolucion = float(TS_S) + 1
+
+cifrado, mac, iv = funciones_aes.cifrarAES_GCM(engineKAB, str(resolucion).encode("utf-8"))
+Tools.sendAESMessage(cifrado, mac, iv, socket)
+
 """ 
 Paso  (8) : 
     Descifrar el DNI para obtener la respuesta
@@ -108,7 +113,7 @@ Paso  (8) :
 
 cifrado, mac, iv = Tools.reciveAESMessage(socket)
 
-textoClaro = Tools.checkMessage_GCM(KAB_S.encode("utf-8"), iv, cifrado, mac)
+textoClaro = Tools.checkMessage_GCM(bytes.fromhex(KAB_S), iv, cifrado, mac)
 
 dni = textoClaro.decode("utf-8")
 
@@ -116,9 +121,10 @@ print("DNI ->" + dni)
 
 print(Fore.LIGHTGREEN_EX + "[STATUS]   Procesando respuesta. Cifrando mensaje")
 
-cifrado, mac, iv = funciones_aes.cifrarAES_GCM(datos[dni])
+engineKAB = funciones_aes.iniciarAES_GCM(bytes.fromhex(KAB_S))
+cifrado, mac, iv = funciones_aes.cifrarAES_GCM(engineKAB, datos[dni].encode("utf-8"))
 
-Tools.sendAESMessage(cifrado, mac, iv)
+Tools.sendAESMessage(cifrado, mac, iv, socket)
 
 print(Fore.CYAN + "[INFO]     Respuesta a la peticion de DNI enviada" + Style.RESET_ALL)
 

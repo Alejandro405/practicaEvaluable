@@ -94,7 +94,7 @@ print(Fore.LIGHTGREEN_EX + "[STATUS]   Petición resuelta con esxito. Esperando 
 
 socket.escuchar()
 
-
+print(Fore.CYAN + "[INFO]     Cliente conectado (Alice)"+ Style.RESET_ALL)
 
 
 """ 
@@ -115,11 +115,11 @@ TS = datetime.timestamp(datetime.now())
 KAB = funciones_aes.crear_AESKey()
 engineKAB = funciones_aes.iniciarAES_GCM(KAB)
 print("Clave de sesión AB generada")
-aux = json.dumps([TS.hex(), KAB.hex()]) # Para el cifrado KBT
+aux = json.dumps([str(TS), KAB.hex()]) # Para el cifrado KBT
 
 
-cifM, macM, ivM = funciones_aes.cifrarAES_GCM(engineKAB, aux.encode("utf-8")) # Cifrado de TS y KAB
-msg = json.dumps([TS.hex(), KAB.hex(), cifM.hex(), macM.hex(), ivM.hex()]) # cifM, macM, ivM == E_KBT
+cifM, macM, ivM = funciones_aes.cifrarAES_GCM(engineKBT, aux.encode("utf-8")) # Cifrado de TS y KAB
+msg = json.dumps([str(TS), KAB.hex(), cifM.hex(), macM.hex(), ivM.hex()]) # cifM, macM, ivM == E_KBT
 
 
 cifrado, mac, iv = funciones_aes.cifrarAES_GCM(engineKAT, msg.encode("utf-8"))
@@ -128,11 +128,11 @@ socket.enviar(cifrado)
 socket.enviar(mac)
 socket.enviar(iv)
 
-print("cifrado KAT-> " + str(cifrado))
-print("mac KAT-> " + str(mac))
-print("iv KAT-> " + str(iv))
+print("cifrado KAT-> " + cifrado.hex())
+print("mac KAT-> " + mac.hex())
+print("iv KAT-> " + iv.hex())
 
 print(Fore.CYAN + "[INFO]     Petici'on de conexi'on resuelta" + Style.RESET_ALL)
-print(Fore.LIGHTGREEN_EX + "[STATUS]   Closing service")
+print(Fore.LIGHTGREEN_EX + "[STATUS]   Closing service" + Style.RESET_ALL)
 
 exit()

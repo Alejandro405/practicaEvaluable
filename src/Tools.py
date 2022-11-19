@@ -114,11 +114,11 @@ def checkMessage_GCM(key, iv, cif, mac):
         mac (bytes): HMAC enviado por el extremo emisor
     """
     res = funciones_aes.descifrarAES_GCM(key, iv, cif, mac)
-    if not res:
+    if res != False:
         print(Fore.CYAN + "[INFO]     paquete correcto" + Style.RESET_ALL)
         return res
     else:
-        print(Fore.RED + "[ERROR]   Inici'On de conexión con B comprometido" + Style.RESET_ALL)
+        print(Fore.RED + "[ERROR]   Mensaje comprometido" + Style.RESET_ALL)
         exit()
 
 def checkSesionReq(expectedId, datos, firmaSesionA, publicKey):
@@ -134,3 +134,10 @@ def checkSesionReq(expectedId, datos, firmaSesionA, publicKey):
         exit()
 
     return KAT
+
+def castJSONMessage(json):
+    res = []
+    for x in json:
+        res.append(bytes.fromhex(x))
+
+    return res
