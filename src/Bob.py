@@ -1,6 +1,5 @@
 import binascii
 import json
-
 import funciones_rsa
 import socket_class
 import funciones_aes
@@ -30,7 +29,7 @@ print(Fore.LIGHTGREEN_EX + "[STATUS]   Recursos inicializados. Conectando con TT
 """ 
 Paso 1 (2) :
     Generar clave des sesion (KBT) AES 
-    Enviar clave a TTP con la clave p'ublica de TTP
+    Enviar clave a TTP con la clave pública de TTP
 """
 KBT = funciones_aes.crear_AESKey()
 engineKBT = funciones_aes.iniciarAES_GCM(KBT)
@@ -52,7 +51,7 @@ print(Fore.CYAN + "[INFO]     Mensaje enviado a TTP con la clave de sesión KBT.
 
 socket.cerrar()
 
-print(Fore.LIGHTGREEN_EX + "[STATUS]   Esperando petici'on de servicio (Alice)" + Style.RESET_ALL)
+print(Fore.LIGHTGREEN_EX + "[STATUS]   Esperando petición de servicio (Alice)" + Style.RESET_ALL)
 
 # --------------  Conexiones con TTP finalizadas --> PERMANECER A LA ESCUCHA DEL MENSAJE INICIAL DE ALICE  -------------
 
@@ -66,8 +65,8 @@ print(Fore.CYAN + "[INFO]     Conexion establecida. Atendiendo cliente (Alice)")
 Paso  (6) : 
     Extraer mensaje inicial de Alice (E_KBT, E_KAB)
     Recuperar KAB
-    Procesar Desaf'io
-    Enviar respuesta del desaf'io con KAB: KAB->[TS + 1]
+    Procesar Desafío
+    Enviar respuesta del desafío con KAB: KAB->[TS + 1]
     Importante revisar identiuficador del mensaje
 """
 
@@ -93,11 +92,11 @@ textoClaro = Tools.checkMessage_GCM(
 idSesion, aux = json.loads(textoClaro)
 
 if idSesion == A and aux == TS_S:
-    print(Fore.CYAN + "[INFO]     Id de sesi'on verificado. Time stamps 'integros" + Style.RESET_ALL)
+    print(Fore.CYAN + "[INFO]     Id de sesión verificado. Time stamps íntegros" + Style.RESET_ALL)
 else:
-    print(Fore.RED + "[ERROR]    Mensaje inicial mal formulado. Los Time-Stamps han de coincidir, y la identificaci'on ""'Alice'" + Style.RESET_ALL)
+    print(Fore.RED + "[ERROR]    Mensaje inicial mal formulado. Los Time-Stamps han de coincidir, y la identificación ""'Alice'" + Style.RESET_ALL)
 
-print(Fore.CYAN + "[INFO]     Datos de sesi'on recogidos. Resolviendo desaf'io" + Style.RESET_ALL)
+print(Fore.CYAN + "[INFO]     Datos de sesión recogidos. Resolviendo desafío" + Style.RESET_ALL)
 
 resolucion = float(TS_S) + 1
 
@@ -108,7 +107,7 @@ Tools.sendAESMessage(cifrado, mac, iv, socket)
 Paso  (8) : 
     Descifrar el DNI para obtener la respuesta
     acceder al nombre almacenado en el diccionario
-    IMPORTANTE: en caso de que el dni no est'e recogido en el diccionario se enviara la cadena vac'ia
+    IMPORTANTE: en caso de que el dni no esté recogido en el diccionario se enviara la cadena vacía
 """
 
 cifrado, mac, iv = Tools.reciveAESMessage(socket)
@@ -128,6 +127,6 @@ Tools.sendAESMessage(cifrado, mac, iv, socket)
 
 print(Fore.CYAN + "[INFO]     Respuesta a la peticion de DNI enviada" + Style.RESET_ALL)
 
-print(Fore.LIGHTGREEN_EX + "[STATUS]   Cerrando servicio")
+print(Fore.LIGHTGREEN_EX + "[STATUS]   Cerrando servicio" + Style.RESET_ALL)
 
 exit()

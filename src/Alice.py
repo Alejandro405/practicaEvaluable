@@ -1,14 +1,14 @@
 import binascii
 import json
 import time
+import Tools
+import socket_class
+import funciones_aes
 
 from funciones_rsa import *
 from colorama import Fore, Style
-import socket_class
-import funciones_aes
 from constans import *
-import Tools
-from Crypto.Util.Padding import pad
+
 
 """
 Paso 0 (Inicialización de recursos) : 
@@ -50,11 +50,11 @@ print(Fore.CYAN + "[INFO]     Mensaje enviado a TTP con la clave de sesion KAT" 
 socket.cerrar()
 
 
-# time.sleep(10)
+time.sleep(8)
 """ 
 Paso 2 (3) :
     Lanzar petición de conexion con B a TTP
-    Permanecer a la espera de la clave de sesi'on del TTP
+    Permanecer a la espera de la clave de sesión del TTP
 """
 socket.conectar()
 peticionInicial = json.dumps([A, B])  # formato String
@@ -89,7 +89,7 @@ socket.cerrar()
 
 """ 
 Paso 3.1 (5) : 
-    Enviar X a Bob y mantenerse a la espera de la resoluci'on del desaf'io
+    Enviar X a Bob y mantenerse a la espera de la resolución del desafío
     exit()
 """
 
@@ -119,8 +119,6 @@ Paso  (7) :
 
 dni = "12345678x"
 engineKAB = funciones_aes.iniciarAES_GCM(bytes.fromhex(KAB_S))
-
-binascii.hexlify()
 cifrado, mac, iv = funciones_aes.cifrarAES_GCM(engineKAB, dni.encode("utf-8"))
 
 Tools.sendAESMessage(
@@ -130,7 +128,7 @@ Tools.sendAESMessage(
     , socket
 )
 
-print(Fore.LIGHTGREEN_EX + "[STATUS]   Petici'on enviada esperando respuesta" + Style.RESET_ALL)
+print(Fore.LIGHTGREEN_EX + "[STATUS]   Petición enviada esperando respuesta" + Style.RESET_ALL)
 
 cifrado, mac, iv = Tools.reciveAESMessage(socket)
 

@@ -1,15 +1,20 @@
+import base64
+
+from socket_class import SOCKET_SIMPLE_TCP
+
 import funciones_aes
 import hashlib
 import hmac
 import json
 import constans
+from Crypto.Cipher import AES, PKCS1_OAEP
 
 from funciones_rsa import *
 from colorama import Fore, Style
 
 
 def getJSONMessage(contentList):
-    """Dada una enera un JSON con el contenido de la lista pasada como parámetro.
+    """Dada una enera un JSON con el contenido de la lista pasada como par'ametro.
     El orden de los elemntos del JSON corresponde al orden de la lista introducida como parametro
 
     Args:
@@ -22,33 +27,30 @@ def getJSONMessage(contentList):
 
     return json.dumps(msg)
 
-
 def makeHMAC_SHA256(clave, datos):
     """Generador de HMAC usando como funcion hash SHA256
 
     Args:
         clave (String): Clave para la funcion MAC
-        datos (bytes): Datos a los que aplicar la función HASH
+        datos (bytes): Datos a los que aplicar la funci'on HASH
 
     Returns:
-        Hash MAC cálculado como: MAC(H(datos, sha256), clave)
+        Hash MAC c'alculado como: MAC(H(datos, sha256), clave)
     """
     return hmac.new(clave.encode('utf-8'), datos, hashlib.sha256).digest()
 
-
 def checkHMAC_CTR(calcHMAC, recivHMAC):
-    """Procedimiento de varificacion de MAC's. En caso de que las MAC's no concuerden el procedimieto aborta la ejecución del programa que use la función
+    """Procedimiento de varificacion de MAC's. En caso de que las MAC's no concuerden el procedimieto aborta la ejecuci'on del programa que use la funci'on
 
     Args:
         calcHMAC (bytes): HMAC precalculada apartir del mensaje recivido
         recivHMAC (bytes): HMAC recivido en el propio mensaje recivido
     """
     if calcHMAC == recivHMAC:
-        print(Fore.CYAN + "[INFO]     paquete correcto" + Style.RESET_ALL)
+        print(Fore.CYAN +"[INFO]     paquete correcto" + Style.RESET_ALL)
     else:
         print(Fore.RED + "[ERROR]   Inicion de conexión con B comprometido" + Style.RESET_ALL)
         exit()
-
 
 def descifrarRSA(criptograma, claveDescifr):
     """Función de descifrado que resuelve errores del tipo "Ciphertext with incorrect length"
@@ -63,13 +65,12 @@ def descifrarRSA(criptograma, claveDescifr):
     res = []
     while length - offset > 0:
         if length - offset > constans.DEFAULT_LENGTH:
-            res.append(cipher.decrypt(criptograma[offset: offset + constans.DEFAULT_LENGTH]))
+            res.append(cipher.decrypt(criptograma[offset : offset + constans.DEFAULT_LENGTH]))
         else:
             res.append(cipher.decrypt(criptograma[offset:]))
         offset += constans.DEFAULT_LENGTH
 
     return res
-
 
 def reciveAESMessage(socket):
     """
@@ -79,12 +80,11 @@ def reciveAESMessage(socket):
     """
     return socket.recibir(), socket.recibir(), socket.recibir()
 
-
 def sendAESMessage(criptograma, mac, nonce, socket):
     """
     Enviar mensaje cifrado mediante AES_GCM según lo descrito en el fichero README.md.
     :param criptograma: mensaje cifrado.
-    :param mac: mac del cifrado enviado por el otro extremo.
+    :param mac: mac del cifrado enviado por el otro extremo
     :param nonce: vector de inicializacion unsado en el cifrado.
     :param socket: socket para las operaciones I/O.
     """
@@ -92,22 +92,20 @@ def sendAESMessage(criptograma, mac, nonce, socket):
     socket.enviar(mac)
     socket.enviar(nonce)
 
-
 def makeHMAC_SHA256(clave, datos):
     """Generador de HMAC usando como funcion hash SHA256
 
     Args:
         clave (String): Clave para la funcion MAC
-        datos (bytes): Datos a los que aplicar la función HASH
+        datos (bytes): Datos a los que aplicar la funci'on HASH
 
     Returns:
-        Hash MAC cálculado como: MAC(H(datos, sha256), clave)
+        Hash MAC c'alculado como: MAC(H(datos, sha256), clave)
     """
     return hmac.new(clave.encode('utf-8'), datos, hashlib.sha256).digest()
 
-
 def checkMessage_GCM(key, iv, cif, mac):
-    """Procedimiento de varificacion de MAC's. En caso de que las MAC's no concuerden el procedimieto aborta la ejecución del programa que use la función
+    """Procedimiento de varificacion de MAC's. En caso de que las MAC's no concuerden el procedimieto aborta la ejecuci'on del programa que use la funci'on
 
     Args:
         key (bytes): clave usada por los extremos para el cifrado/descifrado GCM
@@ -116,30 +114,19 @@ def checkMessage_GCM(key, iv, cif, mac):
         mac (bytes): HMAC enviado por el extremo emisor
     """
     res = funciones_aes.descifrarAES_GCM(key, iv, cif, mac)
-    if res != False:
+    if not res:
         print(Fore.CYAN + "[INFO]     paquete correcto" + Style.RESET_ALL)
         return res
     else:
-        print(Fore.RED + "[ERROR]   Mensaje comprometido" + Style.RESET_ALL)
+        print(Fore.RED + "[ERROR]   Inici'On de conexión con B comprometido" + Style.RESET_ALL)
         exit()
 
-
 def checkSesionReq(expectedId, datos, firmaSesionA, publicKey):
-    """
-    Función para la verificación de firmas e identificación de las peticiones iniciales del protocolo. En casp de que las
-    firmas no coincidan o las identificaciones no concuerden, se mostrará un mensaje de error y se finalizará la ejecución
-    del programa.
-    :param expectedId (String): String identificador especificado en el protocolo
-    :param datos (bytes): String identificador envido por el extremo opuesto.
-    :param firmaSesionA (bytes): Firma del envío opuesto, garantía de no repudio.
-    :param publicKey (bytes): Clave pública del extremo opuesto.
-    :return: Clave de sesión del extremo opuesto.
-    """
     if not comprobarRSA_PSS(datos, firmaSesionA, publicKey):
         print(Fore.RED + "[ERROR]   Firmas alteradas durante el envío" + Style.RESET_ALL)
         exit()
 
-    print(Fore.CYAN + "[INFO]     Firma válidada con éxito. Emisor autenticado" + Style.RESET_ALL)
+    print(Fore.CYAN +"[INFO]     Firma válidada con éxito. Emisor autenticado" + Style.RESET_ALL)
 
     id, KAT = json.load(datos)
     if expectedId != expectedId:
@@ -150,11 +137,6 @@ def checkSesionReq(expectedId, datos, firmaSesionA, publicKey):
 
 
 def castJSONMessage(json):
-    """
-    Procedimiento para preprocesar objetos numéricos en formato String.
-    :param json: objeto JSON con objetos numéricos (cifrado, mac, iv).
-    :return: Lista de objetos de tipo Bytes en codificación hexadecimal.
-    """
     res = []
     for x in json:
         res.append(bytes.fromhex(x))

@@ -2,9 +2,7 @@
 import socket_class
 import funciones_aes
 import json
-import Tools
 
-from Crypto.Util.Padding import pad, unpad
 from datetime import datetime
 from colorama import Fore, Style
 from constans import *
@@ -69,7 +67,7 @@ cifradoSesionB = socket.recibir()
 firmaSesionB = socket.recibir()  # KBT.hex().encode("utf-8")
 
 print("Cifrado ->" + cifradoSesionB.hex())
-print("Firma ->" + firmaSesionB.hex())  # Las firmas son iguales hasta aqu'i
+print("Firma ->" + firmaSesionB.hex())  # Las firmas son iguales hasta aquí
 engineKBT = None
 
 response = descifrarRSA_OAEP_BIN(cifradoSesionB, asimKey)
@@ -99,8 +97,8 @@ print(Fore.CYAN + "[INFO]     Cliente conectado (Alice)"+ Style.RESET_ALL)
 
 """ 
 Paso 4 (4) : 
-    Permanecer a la espera del la peticion de comunicaci'on
-    Generar clave sim'etricade para la petici'on, identificando el origren de la petici'on (X)
+    Permanecer a la espera del la peticion de comunicación
+    Generar clave simétrica de para la petición, identificando el origren de la petición (X)
     Enviar KAB como: KXT->[Ts, KAB, KYT->[TS, KAB] == M]
 """
 
@@ -132,7 +130,7 @@ print("cifrado KAT-> " + cifrado.hex())
 print("mac KAT-> " + mac.hex())
 print("iv KAT-> " + iv.hex())
 
-print(Fore.CYAN + "[INFO]     Petici'on de conexi'on resuelta" + Style.RESET_ALL)
+print(Fore.CYAN + "[INFO]     Petición de conexión resuelta" + Style.RESET_ALL)
 print(Fore.LIGHTGREEN_EX + "[STATUS]   Closing service" + Style.RESET_ALL)
 
 exit()
