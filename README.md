@@ -13,14 +13,38 @@ se han de seguir los siguientes pasos:
 
 LLegados a este punto las tres entidades ya deben tener los recursos necesarios para comenzar el intercambio de 
 información. El establecimiento de la comunicación entre Alice y Bob se llevará a cabo mediante el protocolo de 
-distribución de claves simétricas Kerberos.
+distribución de claves simétricas, Kerberos.
 
+## Establecimiento de conexión Punto a Punto entre Alice y Bob 
+Una vez distribuidas las claves públicas, y las claves de sesión entre las entidades con TTP. Pasamos al establecimiento
+de conexión entre Alice y Bob siguiendo el modelo Pull para la distribución de la clave de sesión KAB, concretamente
+seguimos el procedimiento descrito en el protocolo Kerberos.
+
+Alice será quien inicie el establecimiento de la conexión, TTP generará tanto la clave de sesión KAB como el desafío a 
+resolver por Bob para que Alice valide la integridad de la operación. Dicho desafío consiste en incrementar en una unidad
+el Time-Stamp generado por TTP al recibir la petición de conexión de Alice. De forma resumida el establecimiento de conexión 
+sigue el siguiente esquema:
+    
+    A -> TTP: "['Alic', 'Bob']"
+    TTP -> A: E_KAT(Ts,KAB, E_KBT(TS, KAB))
+    A -> B: E_KBT(TS, KAB) + E_KAB('Alice', TS)
+    B -> A: E_KAB(TS+1)
+
+## Resolución de peticiones
+Después de establecer la conexión segura entre Alice y Bob, podemos comenzar con la resolución de peticiones. Alice será 
+la encargada de lanzar las peticiones a Bob. Esto hace que Bob actúe como servidor y Alice como cliente, durante toda la 
+comunicación entre las dos entidades.
+
+Nuestras peticiones consistirá en la consulta de un nombre asociado a un DNI, para resolver las peticiones Bob genera un 
+diccionario en el que se mapea cada nombre con su correspondiente DNI, siguiendo el siguiente esquema:
+
+    datos = {
+        "12345678x":"Eliot", 
+        "09876543Y":"MR.Roboot"
+                ...
+    }
 
 ## Implementación del Protocolo
-
-Se ha de implementar algún mecanismo para obtener frescura en los mensajes, para ello se ha de hacer uso de Time-Stamps
-para generar desafío y respuesta. Donde la respuesta al desafío es: F(time-stamp) = time-stamp + 1.
-
 Alice actua como cliente en todo momento, TTP actuará como servidor en todo momento, Bob cambiará su rol dependiendo 
 del estado de la comunicación (cliente para la comunicación TTP, servidor para la comunicación con Alice.
 
@@ -41,18 +65,31 @@ siguiendo el esquema propuesto en [programiz.com](https://www.programiz.com/pyth
 
             ...
 
+Una vez generado el desafío, este ha de ser resuelto y verificado atendiendo a la siguiente función:
+
+    F(n) = n + 1
+    
+    donde n = timestamp
+
 Temporizadores para la sincronización de procesos, proceso Alice retardo de 8 segundos para conseguir que Bob registre
 su clave de sesión (KBT) con el TTP. Alice inicia y cierra dos conexiones TCP con TTP para: comunicar la de sesión KAT y 
 solicitar clave de sesión entre Alice y Bob (KAB). Bob solo establece una conexión TCP con TTP para enviar su clave de 
 sesión (KBT). En todo momentos serán los clientes los encargados de cerrar las conexiones entre sockets, los servidores 
 pasarán a la escucha una vez resuelta las peticiones.
 
-Actualización de motores de cifrado para las operaciones de cifrado.
+Dado que un objeto de la Clase cipher posee un estado (statefull) una vez realizada una operación de cifrado con este, no
+podemos volver a realizar la misma operación. Si violamos esta norma se eleva un error del tipo "encrypt() can only be 
+called after initialization or an update()". Vease el siguiente hilo [TypeError: decrypt() cannot be called after encrypt()](https://stackoverflow.com/questions/54082280/typeerror-decrypt-cannot-be-called-after-encrypt).
+Para evitar esta situación volveremos a inicializar el motor de cifrado antes de cada operación.
 
-Para las operaciones de cifrado y descifrados usaremos claves simétricas y asimétricas en bytes en codificación exadecimal.
-Uso de bytes.fromhex(...) para castear un str a bytes en codificación hexadecimal, y binascii.hexlify(...).
+Para las operaciones de cifrado y descifrados usaremos claves simétricas y asimétricas en formato bytes, pero necesitamos
+una codificación de bytes cón para todas las operaciones, por ello usaremos una codificación en hexadecimal. Es por eso 
+que necesitaremos hacer uso de los siguientes métodos: bytes.fromhex(str: String) para castear un str en codificación 
+hexadecimal a bytes, y binascii.hexlify(x: Bytes) para modificar la codificación actual del objeto pasado como argumento.
 
-Puertos predefinidos para la escucha de las entidades:
+Siempre que se trabaja con sockets para el intercambio de información entre procesos, necesitamos establecer en que puertos
+permanecerán a la escucha los procesos de nuestro sistema. Con ello definimos los siguientes puertos para la escucha de 
+las entidades:
 
     TTP -> 55600
 
