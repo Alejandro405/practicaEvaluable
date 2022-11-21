@@ -9,9 +9,9 @@ from constans import *
 from funciones_rsa import *
 """
 Paso 0 (Inicializacion de recursos): 
-    Generar claves públicas/privadas
+    Generar clave pública/privada
     Guardar clave publica en el fichero <pub_TTP.pub>
-    Inicializar socket de conexión, permeneciendo a la espera de peticiones iniciales
+    Inicializar socket de conexión, permaneciendo a la espera de peticiones iniciales
 """
 asimKey =  crear_RSAKey()# Pub key = asimKey.publickey()   Priv key = asimkey
 guardar_RSAKey_Publica("pub_TTP.pub", asimKey)

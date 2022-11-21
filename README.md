@@ -96,3 +96,15 @@ las entidades:
     Bob -> 55700
 
     Alice -> 55800
+
+Por último dado que en el protocolo a implementar no se definen mecanismos para la sincronización de procesos, debemos 
+introducir un cierto retardo en el proceso Alice.py, de tal forma que permitamos generar un margen de tiempo para que 
+Bob comunique la clave de sesión KBT con TTP. Dicho retardo será introducido con la siguiente sentencia:
+
+    time.sleep(8) # 8 segundos de margen para el intercambio de claves entre Bob y el TTP
+
+Otra forma más elegante de resolver el problema, y por la que se ha optado en la elaboración de la práctica, sería mostrar
+un mensaje por pantalla y permanecer a la espera de la confirmación del usuario. Para esta tarea haremos uso de la 
+siguiente sentencia, para permitir al usuario controlar la ejecución del programa:
+    
+    input("¿Ha enviao bob las claves? [ENTER para continuar]")
