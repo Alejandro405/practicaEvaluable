@@ -1,7 +1,7 @@
-
 import socket_class
 import funciones_aes
 import json
+import Tools
 
 from datetime import datetime
 from colorama import Fore, Style
@@ -41,15 +41,18 @@ print("Response: " + response.decode("utf-8"))
 
 idSesion, KAT_S = json.loads(response)
 
+Tools.checkSesionReq(A, idSesion, KAT_S.encode("utf-8"), firmaSesionA, pub_Alice)
+
+"""
 if not comprobarRSA_PSS(KAT_S.encode("utf-8"), firmaSesionA, pub_Alice):
     print(Fore.RED + "[ERROR]   Firmas alteradas durante el envío" + Style.RESET_ALL)
     exit()
-
 print(Fore.CYAN + "[INFO]     Firma válidada con éxito. Emisor autenticado"+ Style.RESET_ALL)
 
 if A != idSesion:
     print(Fore.RED + "[ERROR]   Mensaje con identificador no válido"+ Style.RESET_ALL)
     exit()
+"""
 
 engineKAT = funciones_aes.iniciarAES_GCM(KAT_S.encode("utf-8"))
 print(Fore.LIGHTGREEN_EX + "[STATUS]   Petición resuelta con esxito. Esperando cliente (Bob)"+ Style.RESET_ALL)
@@ -76,6 +79,7 @@ print("Response: " + response.decode("utf-8") + "")
 
 idSesion, KBT_S = json.loads(descifrarRSA_OAEP(cifradoSesionB, asimKey))
 
+"""
 if not comprobarRSA_PSS(KBT_S.encode("utf-8"), firmaSesionB, pub_Bob):
     print(Fore.RED + "[ERROR]   Firmas alteradas durante el envío" + Style.RESET_ALL)
     exit()
@@ -85,6 +89,8 @@ print(Fore.CYAN + "[INFO]     Firma válidada con éxito. Emisor autenticado"+ S
 if B != idSesion:
     print(Fore.RED + "[ERROR]   Mensaje de orijen no válido" + Style.RESET_ALL)
     exit()
+"""
+Tools.checkSesionReq(B, idSesion, KBT_S.encode("utf-8"), firmaSesionB, pub_Bob)
 
 engineKBT = funciones_aes.iniciarAES_GCM(KBT_S.encode("utf-8"))
 print(Fore.LIGHTGREEN_EX + "[STATUS]   Petición resuelta con esxito. Esperando cliente (Petición de conexion A<->B de Alice)"+ Style.RESET_ALL)

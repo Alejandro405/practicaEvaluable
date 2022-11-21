@@ -20,7 +20,11 @@ asimKey = funciones_rsa.crear_RSAKey() # Pub key = asimKey.publickey()   Priv ke
 pubTTP = funciones_rsa.cargar_RSAKey_Publica("pub_TTP.pub")
 funciones_rsa.guardar_RSAKey_Publica("Bob.pub", asimKey)
 socket = socket_class.SOCKET_SIMPLE_TCP("127.0.0.1", TTP_PORT)
-datos = {"12345678x":"Eliot", "09876543Y":"MR.Roboot"}
+datos = {
+    "12345678x":"Eliot",
+    "09876543Y":"MR.Roboot",
+    "77431443B":"Alejandro Téllez Montiel"
+}
 
 
 print(Fore.LIGHTGREEN_EX + "[STATUS]   Recursos inicializados. Conectando con TTP...." + Style.RESET_ALL)
@@ -28,12 +32,12 @@ print(Fore.LIGHTGREEN_EX + "[STATUS]   Recursos inicializados. Conectando con TT
 
 """ 
 Paso 1 (2) :
-    Generar clave des sesion (KBT) AES 
-    Enviar clave a TTP con la clave pública de TTP
+    Generar clave de sesión (KBT) 
+    Enviar clave de sesión a TTP con la clave pública de TTP junto a la firma del mensaje
 """
 KBT = funciones_aes.crear_AESKey()
 engineKBT = funciones_aes.iniciarAES_GCM(KBT)
-# JSON opera con listas de strings!!
+
 print("Clave KBT: " + KBT.hex())
 
 aux = json.dumps([B, KBT.hex()])
@@ -67,15 +71,12 @@ Paso  (6) :
     Recuperar KAB
     Procesar Desafío
     Enviar respuesta del desafío con KAB: KAB->[TS + 1]
-    Importante revisar identiuficador del mensaje
 """
 
 response = socket.recibir()
 
-cifradoM, macM, ivM, cifrado, mac, iv = json.loads(response) # [cifradoM, macM, ivM] -> reenvio de A y [cifrado, mac, iv] para KAB
+cifradoM, macM, ivM, cifrado, mac, iv = json.loads(response)
 
-# cifradoM -> TS, KAB
-# cifrado -> "Alice", TS
 
 textoClaro = Tools.checkMessage_GCM(binascii.hexlify(KBT), bytes.fromhex(ivM), bytes.fromhex(cifradoM), bytes.fromhex(macM))
 
@@ -107,7 +108,6 @@ Tools.sendAESMessage(cifrado, mac, iv, socket)
 Paso  (8) : 
     Descifrar el DNI para obtener la respuesta
     acceder al nombre almacenado en el diccionario
-    IMPORTANTE: en caso de que el dni no esté recogido en el diccionario se enviara la cadena vacía
 """
 
 cifrado, mac, iv = Tools.reciveAESMessage(socket)
