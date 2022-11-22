@@ -55,7 +55,7 @@ Además, se usará la misma clave para cifrar como para el cálculo de HMAC.
 
 En el enunciado de la práctica vemos como la generación de desafíos, para la generación de frescura y validar la identidad
 del otro extremo, ha de ser llevada a cabo mediante TimeStamps. Para esta tarea haremos uso de la librería "datetime", 
-siguiendo el esquema propuesto en [programiz.com](https://www.programiz.com/python-programming/datetime/timestamp-datetime:):
+siguiendo el esquema propuesto en [programiz.com](https://www.programiz.com/python-programming/datetime/timestamp-datetime):
     
     from datetime import datetime
 
